@@ -43,7 +43,7 @@ export const todolistsSlice = createSlice({
         alert(action.payload.message)
       })
       .addCase(createTodolistTC.fulfilled, (state, action) => {
-        state.push({ ...action.payload.todolist, filter: "all" })
+        state.unshift({ ...action.payload.todolist, filter: "all" })
       })
       .addCase(createTodolistTC.rejected, (_state, action: any) => {
         alert(action.payload.message)

@@ -1,5 +1,7 @@
-import { createSlice, nanoid } from "@reduxjs/toolkit"
-import { createTodolistTC, deleteTodolistTC } from "./todolists-slice.ts"
+import { createSlice, nanoid} from "@reduxjs/toolkit"
+import {createTodolistTC, deleteTodolistTC} from "./todolists-slice.ts"
+import {DomainTask} from "@/features/todolists/api/tasksApi.types.ts";
+import {TaskPriority, TaskStatus} from "@/common/enums";
 
 export const tasksSlice = createSlice({
   name: "tasks",
@@ -16,13 +18,13 @@ export const tasksSlice = createSlice({
       }
     }),
     createTaskAC: create.reducer<{ todolistId: string; title: string }>((state, action) => {
-      const newTask: Task = { title: action.payload.title, isDone: false, id: nanoid() }
+      const newTask: DomainTask = { title: action.payload.title, status: TaskStatus.New, id: nanoid(), description: "", deadline: "", startDate: "", priority: TaskPriority.Low, order: 0, addedDate: '', todoListId: action.payload.todolistId  }
       state[action.payload.todolistId].unshift(newTask)
     }),
-    changeTaskStatusAC: create.reducer<{ todolistId: string; taskId: string; isDone: boolean }>((state, action) => {
+    changeTaskStatusAC: create.reducer<{ todolistId: string; taskId: string; status: TaskStatus }>((state, action) => {
       const task = state[action.payload.todolistId].find((task) => task.id === action.payload.taskId)
       if (task) {
-        task.isDone = action.payload.isDone
+        task.status = action.payload.status
       }
     }),
     changeTaskTitleAC: create.reducer<{ todolistId: string; taskId: string; title: string }>((state, action) => {
@@ -47,10 +49,6 @@ export const { deleteTaskAC, createTaskAC, changeTaskTitleAC, changeTaskStatusAC
 export const { selectTasks } = tasksSlice.selectors
 export const tasksReducer = tasksSlice.reducer
 
-export type Task = {
-  id: string
-  title: string
-  isDone: boolean
-}
 
-export type TasksState = Record<string, Task[]>
+
+export type TasksState = Record<string, DomainTask[]>
