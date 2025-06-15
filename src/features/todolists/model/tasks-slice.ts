@@ -1,32 +1,102 @@
-import { createSlice, nanoid} from "@reduxjs/toolkit"
-import {createTodolistTC, deleteTodolistTC} from "./todolists-slice.ts"
-import {DomainTask} from "@/features/todolists/api/tasksApi.types.ts";
-import {TaskPriority, TaskStatus} from "@/common/enums";
+import { createTodolistTC, deleteTodolistTC } from "./todolists-slice.ts"
+import { DomainTask, type UpdateTaskModel } from "@/features/todolists/api/tasksApi.types.ts"
+import { TaskStatus } from "@/common/enums"
+import { createAppSlice } from "@/common/utils"
+import { tasksApi } from "@/features/todolists/api/tasksApi"
+import { changeStatusAC } from "@/app/app-slice"
 
-export const tasksSlice = createSlice({
+export const tasksSlice = createAppSlice({
   name: "tasks",
   initialState: {} as TasksState,
   selectors: {
     selectTasks: (state) => state,
   },
   reducers: (create) => ({
-    deleteTaskAC: create.reducer<{ todolistId: string; taskId: string }>((state, action) => {
-      const tasks = state[action.payload.todolistId]
-      const index = tasks.findIndex((task) => task.id === action.payload.taskId)
-      if (index !== -1) {
-        tasks.splice(index, 1)
-      }
-    }),
-    createTaskAC: create.reducer<{ todolistId: string; title: string }>((state, action) => {
-      const newTask: DomainTask = { title: action.payload.title, status: TaskStatus.New, id: nanoid(), description: "", deadline: "", startDate: "", priority: TaskPriority.Low, order: 0, addedDate: '', todoListId: action.payload.todolistId  }
-      state[action.payload.todolistId].unshift(newTask)
-    }),
-    changeTaskStatusAC: create.reducer<{ todolistId: string; taskId: string; status: TaskStatus }>((state, action) => {
-      const task = state[action.payload.todolistId].find((task) => task.id === action.payload.taskId)
-      if (task) {
-        task.status = action.payload.status
-      }
-    }),
+    fetchTasksTC: create.asyncThunk(
+      async (todolistId: string, thunkAPI) => {
+        try {
+          thunkAPI.dispatch(changeStatusAC({ status: "loading" }))
+          const res = await tasksApi.getTasks(todolistId)
+          thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
+          return { todolistId, tasks: res.data.items }
+        } catch (error) {
+          thunkAPI.dispatch(changeStatusAC({ status: "failed" }))
+          return thunkAPI.rejectWithValue(error)
+        }
+      },
+      {
+        fulfilled: (state, action) => {
+          state[action.payload.todolistId] = action.payload.tasks
+        },
+      },
+    ),
+    createTaskTC: create.asyncThunk(
+      async (args: { todolistId: string; title: string }, thunkAPI) => {
+        try {
+          thunkAPI.dispatch(changeStatusAC({ status: "loading" }))
+          const res = await tasksApi.createTask(args)
+          thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
+          return { task: res.data.data.item }
+        } catch (error) {
+          thunkAPI.dispatch(changeStatusAC({ status: "failed" }))
+          return thunkAPI.rejectWithValue(error)
+        }
+      },
+      {
+        fulfilled: (state, action) => {
+          state[action.payload.task.todoListId].unshift(action.payload.task)
+        },
+      },
+    ),
+    deleteTaskTC: create.asyncThunk(
+      async (args: { todolistId: string; taskId: string }, thunkAPI) => {
+        try {
+          await tasksApi.deleteTask(args)
+          return args
+        } catch (error) {
+          return thunkAPI.rejectWithValue(error)
+        }
+      },
+      {
+        fulfilled: (state, action) => {
+          const tasks = state[action.payload.todolistId]
+          const index = tasks.findIndex((task) => task.id === action.payload.taskId)
+          if (index !== -1) {
+            tasks.splice(index, 1)
+          }
+        },
+      },
+    ),
+    changeTaskStatusTC: create.asyncThunk(
+      async (task: DomainTask, thunkAPI) => {
+        try {
+          const model: UpdateTaskModel = {
+            status: task.status,
+            description: task.description,
+            title: task.title,
+            deadline: task.deadline,
+            startDate: task.startDate,
+            priority: task.priority,
+          }
+
+          thunkAPI.dispatch(changeStatusAC({ status: "loading" }))
+          const res = await tasksApi.updateTask({ todolistId: task.todoListId, taskId: task.id, model })
+          thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
+          return { task: res.data.data.item }
+        } catch (error) {
+          thunkAPI.dispatch(changeStatusAC({ status: "failed" }))
+          return thunkAPI.rejectWithValue(error)
+        }
+      },
+      {
+        fulfilled: (state, action) => {
+          const task = state[action.payload.task.todoListId].find((task) => task.id === action.payload.task.id)
+          if (task) {
+            task.status = action.payload.task.status ? TaskStatus.Completed : TaskStatus.New
+          }
+        },
+      },
+    ),
     changeTaskTitleAC: create.reducer<{ todolistId: string; taskId: string; title: string }>((state, action) => {
       const task = state[action.payload.todolistId].find((task) => task.id === action.payload.taskId)
       if (task) {
@@ -45,10 +115,8 @@ export const tasksSlice = createSlice({
   },
 })
 
-export const { deleteTaskAC, createTaskAC, changeTaskTitleAC, changeTaskStatusAC } = tasksSlice.actions
+export const { fetchTasksTC, deleteTaskTC, createTaskTC, changeTaskTitleAC, changeTaskStatusTC } = tasksSlice.actions
 export const { selectTasks } = tasksSlice.selectors
 export const tasksReducer = tasksSlice.reducer
-
-
 
 export type TasksState = Record<string, DomainTask[]>
