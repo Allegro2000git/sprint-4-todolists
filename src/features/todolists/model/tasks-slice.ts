@@ -51,9 +51,12 @@ export const tasksSlice = createAppSlice({
     deleteTaskTC: create.asyncThunk(
       async (args: { todolistId: string; taskId: string }, thunkAPI) => {
         try {
+          thunkAPI.dispatch(changeStatusAC({ status: "loading" }))
           await tasksApi.deleteTask(args)
+          thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
           return args
         } catch (error) {
+          thunkAPI.dispatch(changeStatusAC({ status: "failed" }))
           return thunkAPI.rejectWithValue(error)
         }
       },
@@ -67,7 +70,7 @@ export const tasksSlice = createAppSlice({
         },
       },
     ),
-    changeTaskStatusTC: create.asyncThunk(
+    updateTaskTC: create.asyncThunk(
       async (task: DomainTask, thunkAPI) => {
         try {
           const model: UpdateTaskModel = {
@@ -93,16 +96,11 @@ export const tasksSlice = createAppSlice({
           const task = state[action.payload.task.todoListId].find((task) => task.id === action.payload.task.id)
           if (task) {
             task.status = action.payload.task.status ? TaskStatus.Completed : TaskStatus.New
+            task.title = action.payload.task.title
           }
         },
       },
     ),
-    changeTaskTitleAC: create.reducer<{ todolistId: string; taskId: string; title: string }>((state, action) => {
-      const task = state[action.payload.todolistId].find((task) => task.id === action.payload.taskId)
-      if (task) {
-        task.title = action.payload.title
-      }
-    }),
   }),
   extraReducers: (builder) => {
     builder
@@ -110,12 +108,12 @@ export const tasksSlice = createAppSlice({
         state[action.payload.todolist.id] = []
       })
       .addCase(deleteTodolistTC.fulfilled, (state, action) => {
-        delete state[action.payload.id]
+        delete state[action.payload.todolistId]
       })
   },
 })
 
-export const { fetchTasksTC, deleteTaskTC, createTaskTC, changeTaskTitleAC, changeTaskStatusTC } = tasksSlice.actions
+export const { fetchTasksTC, deleteTaskTC, createTaskTC, updateTaskTC } = tasksSlice.actions
 export const { selectTasks } = tasksSlice.selectors
 export const tasksReducer = tasksSlice.reducer
 
