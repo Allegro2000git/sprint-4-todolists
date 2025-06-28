@@ -1,6 +1,5 @@
 import { createTodolistTC, deleteTodolistTC } from "./todolists-slice.ts"
 import { DomainTask, type UpdateTaskModel } from "@/features/todolists/api/tasksApi.types.ts"
-import { TaskStatus } from "@/common/enums"
 import { createAppSlice } from "@/common/utils"
 import { tasksApi } from "@/features/todolists/api/tasksApi"
 import { changeStatusAC } from "@/app/app-slice"
@@ -93,10 +92,9 @@ export const tasksSlice = createAppSlice({
       },
       {
         fulfilled: (state, action) => {
-          const task = state[action.payload.task.todoListId].find((task) => task.id === action.payload.task.id)
-          if (task) {
-            task.status = action.payload.task.status ? TaskStatus.Completed : TaskStatus.New
-            task.title = action.payload.task.title
+          const index = state[action.payload.task.todoListId].findIndex((task) => task.id === action.payload.task.id)
+          if (index !== -1) {
+            state[action.payload.task.todoListId][index] = action.payload.task
           }
         },
       },
