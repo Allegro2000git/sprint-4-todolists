@@ -220,7 +220,6 @@ test("property with todolistId should be deleted", () => {
   )
 
   const keys = Object.keys(endState)
-
   expect(keys.length).toBe(1)
   expect(endState["todolistId2"]).toBeUndefined()
 })
