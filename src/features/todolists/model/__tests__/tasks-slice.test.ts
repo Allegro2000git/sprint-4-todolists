@@ -216,7 +216,7 @@ test("array should be created for new todolist", () => {
 test("property with todolistId should be deleted", () => {
   const endState = tasksReducer(
     startState,
-    deleteTodolistTC.fulfilled({ todolistId: "todolistId2" }, "requestId", "todolistId2"),
+    deleteTodolistTC.fulfilled({ id: "todolistId2" }, "requestId", "todolistId2"),
   )
 
   const keys = Object.keys(endState)
