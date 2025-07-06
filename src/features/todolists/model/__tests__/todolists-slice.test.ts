@@ -18,15 +18,15 @@ beforeEach(() => {
   todolistId2 = nanoid()
 
   startState = [
-    { id: todolistId1, title: "What to learn", addedDate: "", order: 0, filter: "all" },
-    { id: todolistId2, title: "What to buy", addedDate: "", order: 0, filter: "all" },
+    { id: todolistId1, title: "What to learn", addedDate: "", order: 0, filter: "all", entityStatus: "idle" },
+    { id: todolistId2, title: "What to buy", addedDate: "", order: 0, filter: "all", entityStatus: "idle" },
   ]
 })
 
 test("correct todolist should be deleted", () => {
   const endState = todolistsReducer(
     startState,
-    deleteTodolistTC.fulfilled({ todolistId: todolistId1 }, "requestId", todolistId1),
+    deleteTodolistTC.fulfilled({ id: todolistId1 }, "requestId", todolistId1),
   )
 
   expect(endState.length).toBe(1)

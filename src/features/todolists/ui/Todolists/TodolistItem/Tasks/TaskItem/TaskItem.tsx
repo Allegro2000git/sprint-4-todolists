@@ -9,17 +9,18 @@ import type { ChangeEvent } from "react"
 import { getListItemSx } from "./TaskItem.styles"
 import type { DomainTask } from "@/features/todolists/api/tasksApi.types"
 import { TaskStatus } from "@/common/enums"
+import type { DomainTodolist } from "@/features/todolists/model/todolists-slice"
 
 type Props = {
   task: DomainTask
-  todolistId: string
+  todolist: DomainTodolist
 }
 
-export const TaskItem = ({ task, todolistId }: Props) => {
+export const TaskItem = ({ task, todolist }: Props) => {
   const dispatch = useAppDispatch()
 
   const deleteTask = () => {
-    dispatch(deleteTaskTC({ todolistId, taskId: task.id }))
+    dispatch(deleteTaskTC({ todolistId: todolist.id, taskId: task.id }))
   }
 
   const changeTaskStatus = (e: ChangeEvent<HTMLInputElement>) => {
@@ -36,10 +37,14 @@ export const TaskItem = ({ task, todolistId }: Props) => {
   return (
     <ListItem sx={getListItemSx(isTaskCompleted)}>
       <div>
-        <Checkbox checked={isTaskCompleted} onChange={changeTaskStatus} />
-        <EditableSpan value={task.title} onChange={changeTaskTitle} />
+        <Checkbox
+          checked={isTaskCompleted}
+          onChange={changeTaskStatus}
+          disabled={todolist.entityStatus === "loading"}
+        />
+        <EditableSpan value={task.title} onChange={changeTaskTitle} disabled={todolist.entityStatus === "loading"} />
       </div>
-      <IconButton onClick={deleteTask}>
+      <IconButton onClick={deleteTask} disabled={todolist.entityStatus === "loading"}>
         <DeleteIcon />
       </IconButton>
     </ListItem>
