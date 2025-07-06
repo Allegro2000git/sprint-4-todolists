@@ -3,6 +3,9 @@ import { DomainTask, type UpdateTaskModel } from "@/features/todolists/api/tasks
 import { createAppSlice } from "@/common/utils"
 import { tasksApi } from "@/features/todolists/api/tasksApi"
 import { changeStatusAC } from "@/app/app-slice"
+import { ResultCode } from "@/common/enums"
+import { handleServerError } from "@/common/utils/handleServerError"
+import { handleAppError } from "@/common/utils/handleAppError"
 
 export const tasksSlice = createAppSlice({
   name: "tasks",
@@ -18,9 +21,9 @@ export const tasksSlice = createAppSlice({
           const res = await tasksApi.getTasks(todolistId)
           thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
           return { todolistId, tasks: res.data.items }
-        } catch (error) {
-          thunkAPI.dispatch(changeStatusAC({ status: "failed" }))
-          return thunkAPI.rejectWithValue(error)
+        } catch (err) {
+          handleServerError(err, thunkAPI.dispatch)
+          return thunkAPI.rejectWithValue(null)
         }
       },
       {
@@ -34,11 +37,17 @@ export const tasksSlice = createAppSlice({
         try {
           thunkAPI.dispatch(changeStatusAC({ status: "loading" }))
           const res = await tasksApi.createTask(args)
-          thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
-          return { task: res.data.data.item }
-        } catch (error) {
-          thunkAPI.dispatch(changeStatusAC({ status: "failed" }))
-          return thunkAPI.rejectWithValue(error)
+          if (res.data.resultCode === ResultCode.Success) {
+            thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
+            return { task: res.data.data.item }
+          } else {
+            handleAppError(res.data, thunkAPI.dispatch)
+            thunkAPI.dispatch(changeStatusAC({ status: "failed" }))
+            return thunkAPI.rejectWithValue(null)
+          }
+        } catch (err) {
+          handleServerError(err, thunkAPI.dispatch)
+          return thunkAPI.rejectWithValue(null)
         }
       },
       {
@@ -51,12 +60,18 @@ export const tasksSlice = createAppSlice({
       async (args: { todolistId: string; taskId: string }, thunkAPI) => {
         try {
           thunkAPI.dispatch(changeStatusAC({ status: "loading" }))
-          await tasksApi.deleteTask(args)
-          thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
-          return args
-        } catch (error) {
-          thunkAPI.dispatch(changeStatusAC({ status: "failed" }))
-          return thunkAPI.rejectWithValue(error)
+          const res = await tasksApi.deleteTask(args)
+          if (res.data.resultCode === ResultCode.Success) {
+            thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
+            return args
+          } else {
+            handleAppError(res.data, thunkAPI.dispatch)
+            thunkAPI.dispatch(changeStatusAC({ status: "failed" }))
+            return thunkAPI.rejectWithValue(null)
+          }
+        } catch (err) {
+          handleServerError(err, thunkAPI.dispatch)
+          return thunkAPI.rejectWithValue(null)
         }
       },
       {
@@ -83,11 +98,17 @@ export const tasksSlice = createAppSlice({
 
           thunkAPI.dispatch(changeStatusAC({ status: "loading" }))
           const res = await tasksApi.updateTask({ todolistId: task.todoListId, taskId: task.id, model })
-          thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
-          return { task: res.data.data.item }
-        } catch (error) {
-          thunkAPI.dispatch(changeStatusAC({ status: "failed" }))
-          return thunkAPI.rejectWithValue(error)
+          if (res.data.resultCode === ResultCode.Success) {
+            thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
+            return { task: res.data.data.item }
+          } else {
+            handleAppError(res.data, thunkAPI.dispatch)
+            thunkAPI.dispatch(changeStatusAC({ status: "failed" }))
+            return thunkAPI.rejectWithValue(null)
+          }
+        } catch (err) {
+          handleServerError(err, thunkAPI.dispatch)
+          return thunkAPI.rejectWithValue(null)
         }
       },
       {
@@ -106,7 +127,7 @@ export const tasksSlice = createAppSlice({
         state[action.payload.todolist.id] = []
       })
       .addCase(deleteTodolistTC.fulfilled, (state, action) => {
-        delete state[action.payload.todolistId]
+        delete state[action.payload.id]
       })
   },
 })
