@@ -1,5 +1,5 @@
 import { createTodolistTC, deleteTodolistTC } from "./todolists-slice.ts"
-import { DomainTask, type UpdateTaskModel } from "@/features/todolists/api/tasksApi.types.ts"
+import { DomainTask, domainTaskSchema, type UpdateTaskModel } from "@/features/todolists/api/tasksApi.types.ts"
 import { createAppSlice } from "@/common/utils"
 import { tasksApi } from "@/features/todolists/api/tasksApi"
 import { changeStatusAC } from "@/app/app-slice"
@@ -19,6 +19,7 @@ export const tasksSlice = createAppSlice({
         try {
           thunkAPI.dispatch(changeStatusAC({ status: "loading" }))
           const res = await tasksApi.getTasks(todolistId)
+          domainTaskSchema.array().parse(res.data.items) // zod
           thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
           return { todolistId, tasks: res.data.items }
         } catch (err) {
