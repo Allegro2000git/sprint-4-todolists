@@ -1,8 +1,8 @@
-import { Todolist } from "@/features/todolists/api/todolistsApi.types.ts"
+import { createTodolistResponseSchema, Todolist, todolistSchema } from "@/features/todolists/api/todolistsApi.types.ts"
 import { todolistsApi } from "@/features/todolists/api/todolistsApi.ts"
 import { createAppSlice } from "@/common/utils"
 import { changeStatusAC } from "@/app/app-slice"
-import type { RequestStatus } from "@/common/types"
+import { defaultResponseSchema, type RequestStatus } from "@/common/types"
 import { ResultCode } from "@/common/enums"
 import { handleServerError } from "@/common/utils/handleServerError"
 import { handleAppError } from "@/common/utils/handleAppError"
@@ -19,6 +19,7 @@ export const todolistsSlice = createAppSlice({
         try {
           thunkAPI.dispatch(changeStatusAC({ status: "loading" }))
           const res = await todolistsApi.getTodolists()
+          todolistSchema.array().parse(res.data) // zod
           thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
           return { todolists: res.data }
         } catch (err) {
@@ -38,6 +39,7 @@ export const todolistsSlice = createAppSlice({
         try {
           thunkAPI.dispatch(changeStatusAC({ status: "loading" }))
           const res = await todolistsApi.createTodolist(title)
+          createTodolistResponseSchema.parse(res.data) // zod
           if (res.data.resultCode === ResultCode.Success) {
             thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
             return { todolist: res.data.data.item }
@@ -63,6 +65,7 @@ export const todolistsSlice = createAppSlice({
           thunkAPI.dispatch(changeStatusAC({ status: "loading" }))
           thunkAPI.dispatch(changeTodolistEntityStatusAC({ id, entityStatus: "loading" }))
           const res = await todolistsApi.deleteTodolist(id)
+          defaultResponseSchema.parse(res.data) // zod
           if (res.data.resultCode === ResultCode.Success) {
             thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
             return { id }
@@ -92,6 +95,7 @@ export const todolistsSlice = createAppSlice({
         try {
           thunkAPI.dispatch(changeStatusAC({ status: "loading" }))
           const res = await todolistsApi.changeTodolistTitle(args)
+          defaultResponseSchema.parse(res.data) // zod
           if (res.data.resultCode === ResultCode.Success) {
             thunkAPI.dispatch(changeStatusAC({ status: "succeeded" }))
             return args
